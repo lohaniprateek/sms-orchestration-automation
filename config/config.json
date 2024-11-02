@@ -1,0 +1,40 @@
+{
+  "settings": {
+    "sms_limit_per_minute": 10,
+    "default_proxy": "http://default-proxy.example.com:8080",
+    "sms_gateway_url": "https://sms_gateway_api.com/send"
+  },
+  "country_operator_pairs": [
+    {
+      "country": "CountryA",
+      "operators": [
+        {
+          "name": "Operator1",
+          "proxy": "http://proxy1.example.com:8080",
+          "phone_numbers": ["1234567890", "1234567891", "1234567892"]
+        },
+        {
+          "name": "Operator2",
+          "proxy": "http://proxy2.example.com:8080",
+          "phone_numbers": ["2234567890", "2234567891", "2234567892"]
+        }
+      ]
+    },
+    {
+      "country": "CountryB",
+      "operators": [
+        {
+          "name": "Operator3",
+          "proxy": "http://proxy3.example.com:8080",
+          "phone_numbers": ["3234567890", "3234567891", "3234567892"]
+        },
+        {
+          "name": "Operator4",
+          "proxy": "http://proxy4.example.com:8080",
+          "phone_numbers": ["4234567890", "4234567891", "4234567892"]
+        }
+      ]
+    }
+  ]
+}
+

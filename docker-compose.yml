@@ -1,0 +1,51 @@
+version: '3.8'
+
+services:
+  sms-program:
+    build: .
+    environment:
+      COUNTRY: ${COUNTRY}         # Country name for SMS sending
+      OPERATOR: ${OPERATOR}       # Operator name for SMS sending
+      PHONE_NUMBER: ${PHONE_NUMBER}  # Phone number
+      PROXY_DETAILS: ${PROXY_DETAILS} # Proxy details
+      env_file:
+      - ./config/dev.env              #can be changed to satging or prod.env 
+    deploy:
+      replicas: 6                    # Number of instances to scale
+      restart_policy:
+        condition: on-failure
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+    networks:
+      - sms-network
+
+  monitor:
+    image: prom/prometheus          
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+    ports:
+      - "9090:9090"
+    networks:
+      - sms-network
+
+  grafana:
+    image: grafana/grafana          
+    volumes:
+      - grafana-storage:/var/lib/grafana
+    ports:
+      - "3000:3000"
+    depends_on:
+      - monitor
+    networks:
+      - sms-network
+
+networks:
+  sms-network:
+    driver: bridge
+
+volumes:
+  grafana-storage:
+

@@ -1,0 +1,19 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: 'sms_application'
+    scrape_interval: 30s
+
+    static_configs:
+      - targets: ['sms-program:8000']  # e.g endpoint
+        labels:
+          service: 'sms-sending'
+
+  - job_name: 'prometheus'
+    scrape_interval: 15s
+    static_configs:
+      - targets: ['localhost:9090']   # Prometheus' own metrics
+        labels:
+          service: 'prometheus'

@@ -1,8 +1,9 @@
 import requests
-import json
 import logging
-from rate_limiter import RateLimiter
 import os
+import time
+from prometheus_client import start_http_server, Counter
+from rate_limiter import RateLimiter
 
 # Load configuration from environment variables
 COUNTRY = os.getenv("COUNTRY")
@@ -15,8 +16,13 @@ SMS_LIMIT_PER_MINUTE = int(os.getenv("SMS_LIMIT_PER_MINUTE", 10))
 # Configure logging
 logging.basicConfig(filename='logs/sms_log.log', level=logging.INFO)
 
-# Initialize the rate limiter
+# Initialize the rate limiter and Prometheus metrics
 rate_limiter = RateLimiter(limit=SMS_LIMIT_PER_MINUTE, interval=60)
+sms_success_count = Counter('sms_success_count', 'Number of successful SMS sends')
+sms_failure_count = Counter('sms_failure_count', 'Number of failed SMS sends')
+
+# Start the Prometheus metrics server
+start_http_server(8000)
 
 def send_sms(phone_number, proxy):
     headers = {"Content-Type": "application/json"}
@@ -26,25 +32,26 @@ def send_sms(phone_number, proxy):
         "operator": OPERATOR,
         "proxy": proxy
     }
+
     try:
         response = requests.post(SMS_GATEWAY_URL, json=data, headers=headers, timeout=5)
         if response.status_code == 200:
+            sms_success_count.inc()
             logging.info(f"SMS sent successfully to {phone_number} at {time.time()}")
             return True
         else:
+            sms_failure_count.inc()
             logging.error(f"Failed to send SMS to {phone_number}. Status code: {response.status_code}")
-            return False
     except requests.exceptions.RequestException as e:
-        logging.error(f"Exception occurred while sending SMS to {phone_number}: {e}")
-        return False
+        sms_failure_count.inc()
+        logging.error(f"Exception while sending SMS to {phone_number}: {e}")
+    return False
 
 def main():
-    # Send SMS in a rate-limited way
     if rate_limiter.allow_send():
-        if send_sms(PHONE_NUMBER, PROXY_DETAILS):
-            print(f"Sent SMS to {PHONE_NUMBER} via {OPERATOR} in {COUNTRY}")
-        else:
-            print(f"Failed to send SMS to {PHONE_NUMBER}")
+        success = send_sms(PHONE_NUMBER, PROXY_DETAILS)
+        message = f"Sent SMS to {PHONE_NUMBER} via {OPERATOR} in {COUNTRY}" if success else f"Failed to send SMS to {PHONE_NUMBER}"
+        print(message)
     else:
         print("Rate limit reached, waiting to send SMS...")
         rate_limiter.wait_until_allowed()
@@ -52,4 +59,4 @@ def main():
 if __name__ == "__main__":
     while True:
         main()
-        time.sleep(5)  # Slight delay to avoid spamming the API in a loop
+        time.sleep(5)
